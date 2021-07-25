@@ -59,7 +59,6 @@ module.exports = class SlackTransport extends Transport {
         }
 
         const webClient = this.getWebClientInstance();
-        console.log(payload);
         webClient.chat.postMessage(payload)
             .then(response => {
                 this.emit('logged', info);
@@ -87,8 +86,7 @@ module.exports = class SlackTransport extends Transport {
                     ],
                     "fallback": "This is an attachment's fallback"
                 }
-            ],
-            "text": ``,
+            ]
         }
     }
 
@@ -104,7 +102,7 @@ module.exports = class SlackTransport extends Transport {
         if (this.text && typeof this.text === 'function') {
             return this.text(info);
         } else {
-            return `${info.level}: ${info.message}`;
+            return undefined;
         }
     }
 
