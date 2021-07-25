@@ -32,4 +32,40 @@ describe.skip("SlackTransport system", () => {
         });
         logger.log(logType, `This is a ${logType} message`);
     });
+
+    it.only("use function for attachments", () => {
+
+        const customAttachments = (info) => ([
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "plain_text",
+                            "text": `Level: ${info.level}`
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "plain_text",
+                            "text": `Date: ${(new Date()).toString()}`
+                        }
+                    }
+                ]
+            }
+            ]);
+
+        const logger = winston.createLogger({
+            level: 'info',
+            transports: [
+                new SlackTransport({
+                    token: realToken,
+                    channel: realChannel,
+                    attachments: customAttachments
+                })
+            ]
+        });
+        logger.info("This is a info message");
+    });
 });
