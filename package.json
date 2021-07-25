@@ -1,6 +1,6 @@
 {
   "name": "winston-slack-webapi-transport",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A Slack transport for Winston 3+ that logs to a channel via webapi and api token.",
   "main": "index.js",
   "scripts": {
