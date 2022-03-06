@@ -84,6 +84,7 @@ module.exports = class SlackTransport extends Transport {
                             }
                         }
                     ],
+                    "text": `${info.level}: ${info.message}`,
                     "fallback": "This is an attachment's fallback"
                 }
             ]
