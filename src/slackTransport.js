@@ -34,6 +34,10 @@ module.exports = class SlackTransport extends Transport {
         this.blocks = opts.blocks || undefined;
         this.mrkdwn = opts.mrkdwn || false;
         this.text = opts.text || undefined;
+
+        this.username = opts.username || undefined;
+        this.icon_emoji = opts.icon_emoji || undefined;
+        this.icon_url = opts.icon_url || undefined;
     }
 
     getWebClientInstance() {
@@ -43,7 +47,10 @@ module.exports = class SlackTransport extends Transport {
     log(info, callback) {
         let payload = {
             channel: this.channel,
-            mrkdwn: this.mrkdwn
+            mrkdwn: this.mrkdwn,
+            username: this.username,
+            icon_emoji: this.icon_emoji,
+            icon_url: this.icon_url
         };
 
         if (!this.text && !this.blocks && !this.attachments) {
