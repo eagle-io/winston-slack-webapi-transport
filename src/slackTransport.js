@@ -78,23 +78,26 @@ module.exports = class SlackTransport extends Transport {
     }
 
     buildDefaultPayload(info) {
+        // return {
+        //     "attachments": [
+        //         {
+        //             "color": getColor(info.level),
+        //             "blocks": [
+        //                 {
+        //                     "type": "section",
+        //                     "text": {
+        //                         "type": "mrkdwn",
+        //                         "text": `*Level*: ${info.level}\n*Message*: ${info.message}`
+        //                     }
+        //                 }
+        //             ],
+        //             "fallback": "This is an attachment's fallback"
+        //         }
+        //     ]
+        // }
         return {
-            "attachments": [
-                {
-                    "color": getColor(info.level),
-                    "blocks": [
-                        {
-                            "type": "section",
-                            "text": {
-                                "type": "mrkdwn",
-                                "text": `*Level*: ${info.level}\n*Message*: ${info.message}`
-                            }
-                        }
-                    ],
-                    "text": `${info.level}: ${info.message}`,
-                    "fallback": "This is an attachment's fallback"
-                }
-            ]
+            "text" : `*${info.level}*\n${info.message}`,
+            "mrkdwn": true
         }
     }
 
