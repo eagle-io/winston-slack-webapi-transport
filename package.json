@@ -1,33 +1,21 @@
 {
   "name": "winston-slack-webapi-transport",
-  "version": "0.0.3",
-  "description": "A Slack transport for Winston 3+ that logs to a channel via webapi and api token.",
+  "version": "0.0.4",
+  "description": "A Slack transport for Winston 3+ that logs to a channel via slack web api.",
   "main": "./src/slackTransport.js",
   "scripts": {
     "test": "jest"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/margori/winston-slack-transport.git"
+    "url": "https://github.com/eagle-io/winston-slack-webapi-transport.git"
   },
-  "keywords": [
-    "slack",
-    "slack-webapi",
-    "winston",
-    "winston-transport"
-  ],
-  "author": "Marcelo Briones",
-  "license": "GPL-3.0-or-later",
-  "bugs": {
-    "url": "https://github.com/margori/winston-slack-webapi-transport/issues"
-  },
-  "homepage": "https://github.com/margori/winston-slack-webapi-transport#readme",
   "dependencies": {
-    "@slack/web-api": "^6.3.0",
+    "@slack/web-api": "^6.9.1",
     "winston-transport": "^4.4.0"
   },
   "devDependencies": {
     "jest": "^27.0.6",
-    "winston": "^3.3.3"
+    "winston": "^3.14.1"
   }
 }
