@@ -83,3 +83,33 @@ test('reports Slack API errors without retrying', async () => {
     assert.equal((await post()).code, 'slack_webapi_platform_error');
     assert.equal(requests.length, 1);
 });
+
+test('times out three stalled attempts and drains close before settling', {timeout: 25000}, async context => {
+    let started;
+    const firstRequest = new Promise(resolve => {started = resolve;});
+    respond = () => started();
+    const transport = new SlackTransport({token: 'test-token', channel: 'test-channel'});
+    let callbackCount = 0;
+    let closeCount = 0;
+    transport.on('closed', () => {closeCount += 1;});
+    const start = performance.now();
+    const delivery = new Promise(resolve => transport.log({level: 'error', message: 'Synthetic stalled fixture'}, error => {
+        callbackCount += 1;
+        resolve(error);
+    }));
+    await firstRequest;
+    const closing = transport.close();
+    assert.equal(transport.close(), closing);
+    assert.equal(closeCount, 0);
+    assert.equal(callbackCount, 0);
+    const [error] = await Promise.all([delivery, closing]);
+    const elapsed = performance.now() - start;
+    assert.equal(error.code, 'slack_webapi_request_error');
+    assert.equal(requests.length, 3);
+    assert.equal(callbackCount, 1);
+    assert.equal(closeCount, 1);
+    assert.equal(transport.pending.size, 0);
+    assert.ok(elapsed >= 14500, 'all three attempts must reach their five second timeout');
+    assert.ok(elapsed < 22000, 'delivery and shutdown must settle within the bounded retry window');
+    context.diagnostic(`Stalled delivery and close settled after ${Math.round(elapsed)} ms across three attempts`);
+});
