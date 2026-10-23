@@ -1,6 +1,5 @@
 const Transport = require('winston-transport');
-const {WebClient} = require('@slack/web-api');
-const {getColor} = require("./colors");
+const {WebClient, LogLevel} = require('@slack/web-api');
 
 module.exports = class SlackTransport extends Transport {
     constructor(opts) {
@@ -11,18 +10,34 @@ module.exports = class SlackTransport extends Transport {
         this.assignRequireOptions(opts);
         this.assignOptions(opts);
 
-        this.webclient = undefined;
+        this.webClient = new WebClient(this.token, {
+            timeout: 5000,
+            logLevel: LogLevel.ERROR,
+            retryConfig: {
+                retries: 2,
+                factor: 2,
+                minTimeout: 250,
+                maxTimeout: 1000,
+                randomize: false
+            },
+            rejectRateLimitedCalls: true,
+            maxRequestConcurrency: 1,
+            allowAbsoluteUrls: false
+        });
+        this.pending = new Set();
+        this.closing = false;
+        this.closePromise = undefined;
     }
 
     assignRequireOptions(opts) {
         this.token = opts.token;
         if (!this.token) {
-            throw "SlackTransport: token or SLACK_TOKEN env var is required"
+            throw new Error("SlackTransport: token is required")
         }
 
         this.channel = opts.channel;
         if (!this.channel) {
-            throw "SlackTransport: channel or SLACK_DEFAULT_CHANNEL is required"
+            throw new Error("SlackTransport: channel is required")
         }
     }
 
@@ -41,60 +56,62 @@ module.exports = class SlackTransport extends Transport {
     }
 
     getWebClientInstance() {
-        return this.webClient || new WebClient(this.token);
+        return this.webClient;
     }
 
     log(info, callback) {
-        let payload = {
+        if (this.closing) {
+            callback(new Error('SlackTransport: transport is closed'));
+            return;
+        }
+
+        let payload;
+        try {
+            payload = this.buildMessage(info);
+        } catch (error) {
+            callback(error);
+            return;
+        }
+
+        const request = Promise.resolve().then(() => this.getWebClientInstance().chat.postMessage(payload));
+        this.pending.add(request);
+        request.then(() => {
+            this.pending.delete(request);
+            try {
+                this.emit('logged', info);
+            } finally {
+                callback();
+            }
+        }, error => {
+            this.pending.delete(request);
+            callback(error);
+        });
+    }
+
+    buildMessage(info) {
+        return {
             channel: this.channel,
             mrkdwn: this.mrkdwn,
             username: this.username,
             icon_emoji: this.icon_emoji,
-            icon_url: this.icon_url
-        };
-
-        if (!this.text && !this.blocks && !this.attachments) {
-            payload = {
-                ...payload,
-                ...this.buildDefaultPayload(info)
-            }
-        } else {
-            payload = {
-                ...payload,
-                ...this.buildPayload(info)
-            }
+            icon_url: this.icon_url,
+            ...(!this.text && !this.blocks && !this.attachments
+                ? this.buildDefaultPayload(info)
+                : this.buildPayload(info))
         }
+    }
 
-        const webClient = this.getWebClientInstance();
-        webClient.chat.postMessage(payload)
-            .then(response => {
-                this.emit('logged', info);
-                callback();
-            })
-            .catch(err => {
-                this.emit('error', err);
-                callback();
+    close() {
+        if (!this.closePromise) {
+            this.closing = true;
+            this.closePromise = Promise.allSettled([...this.pending]).then(() => {
+                this.emit('closed');
             });
+        }
+        return this.closePromise;
     }
 
     buildDefaultPayload(info) {
-        // return {
-        //     "attachments": [
-        //         {
-        //             "color": getColor(info.level),
-        //             "blocks": [
-        //                 {
-        //                     "type": "section",
-        //                     "text": {
-        //                         "type": "mrkdwn",
-        //                         "text": `*Level*: ${info.level}\n*Message*: ${info.message}`
-        //                     }
-        //                 }
-        //             ],
-        //             "fallback": "This is an attachment's fallback"
-        //         }
-        //     ]
-        // }
         return {
             "text" : `*${info.level}*\n${info.message}`,
             "mrkdwn": true
